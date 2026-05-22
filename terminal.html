@@ -1,0 +1,2480 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>明馬系統安全終端 | MingMa Security Terminal</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-primary: #0a0e1a;
+            --bg-secondary: #111827;
+            --bg-card: #1a2236;
+            --bg-hover: #243049;
+            --border: #2d3a5c;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent: #00d4ff;
+            --accent-dim: rgba(0, 212, 255, 0.15);
+            --success: #22c55e;
+            --success-dim: rgba(34, 197, 94, 0.15);
+            --warning: #f59e0b;
+            --warning-dim: rgba(245, 158, 11, 0.15);
+            --danger: #ef4444;
+            --danger-dim: rgba(239, 68, 68, 0.15);
+            --info: #3b82f6;
+            --info-dim: rgba(59, 130, 246, 0.15);
+            --terminal-green: #00ff88;
+            --radius: 8px;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: 'Segoe UI', 'Microsoft JhengHei', 'PingFang TC', sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        body.lang-en {
+            font-family: 'Segoe UI', 'Consolas', 'Courier New', monospace;
+        }
+
+        /* ===== LOGIN SCREEN ===== */
+        #loginScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0a0e1a 0%, #111827 50%, #0f172a 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+
+        .login-container {
+            width: 90%;
+            max-width: 420px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent), var(--terminal-green), var(--accent));
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-header i {
+            font-size: 48px;
+            color: var(--accent);
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .login-header h1 {
+            font-size: 1.5rem;
+            color: var(--text-primary);
+            margin-bottom: 5px;
+        }
+
+        .login-header p {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .login-form .form-group {
+            margin-bottom: 20px;
+        }
+
+        .login-form label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .login-form input {
+            width: 100%;
+            padding: 12px 15px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            color: var(--text-primary);
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .login-form input:focus {
+            border-color: var(--accent);
+        }
+
+        .login-form input[type="password"] {
+            -webkit-text-security: disc;
+            font-family: text;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--accent), #0099cc);
+            border: none;
+            border-radius: var(--radius);
+            color: #000;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 25px rgba(0, 212, 255, 0.3);
+        }
+
+        .login-error {
+            color: var(--danger);
+            font-size: 0.85rem;
+            margin-top: 10px;
+            text-align: center;
+            display: none;
+        }
+
+        .login-error.show {
+            display: block;
+        }
+
+        /* ===== TERMINAL LAYOUT ===== */
+        #terminalApp {
+            display: none;
+            min-height: 100vh;
+        }
+
+        .terminal-header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .terminal-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .terminal-brand i {
+            font-size: 24px;
+            color: var(--accent);
+        }
+
+        .terminal-brand h2 {
+            font-size: 1.1rem;
+            color: var(--text-primary);
+        }
+
+        .terminal-brand span {
+            color: var(--accent);
+            font-size: 0.75rem;
+            background: var(--accent-dim);
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        .terminal-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .ctrl-btn {
+            padding: 8px 14px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .ctrl-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .ctrl-btn.active {
+            background: var(--accent-dim);
+            color: var(--accent);
+            border-color: var(--accent);
+        }
+
+        .ctrl-btn.danger {
+            background: var(--danger-dim);
+            color: var(--danger);
+            border-color: var(--danger);
+        }
+
+        .ctrl-btn.danger:hover {
+            background: var(--danger);
+            color: #fff;
+        }
+
+        /* ===== MAIN GRID ===== */
+        .terminal-main {
+            display: grid;
+            grid-template-columns: 280px 1fr 320px;
+            gap: 15px;
+            padding: 15px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        @media (max-width: 1200px) {
+            .terminal-main {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ===== SIDEBAR ===== */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+
+        .panel-header {
+            padding: 12px 15px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .panel-header i {
+            color: var(--accent);
+            width: 16px;
+        }
+
+        .panel-body {
+            padding: 15px;
+        }
+
+        /* ===== STATUS INDICATORS ===== */
+        .status-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .status-item {
+            background: var(--bg-secondary);
+            border-radius: var(--radius);
+            padding: 12px;
+            text-align: center;
+        }
+
+        .status-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .status-value.success { color: var(--success); }
+        .status-value.warning { color: var(--warning); }
+        .status-value.danger { color: var(--danger); }
+        .status-value.info { color: var(--info); }
+
+        .status-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        /* ===== SYSTEM STATUS ===== */
+        .system-status-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 15px;
+            background: var(--success-dim);
+            border-radius: var(--radius);
+            margin-bottom: 10px;
+        }
+
+        .system-status-bar.alert {
+            background: var(--danger-dim);
+            animation: pulse-alert 2s infinite;
+        }
+
+        .system-status-bar.warning {
+            background: var(--warning-dim);
+        }
+
+        @keyframes pulse-alert {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--success);
+            box-shadow: 0 0 8px var(--success);
+        }
+
+        .system-status-bar.alert .status-dot {
+            background: var(--danger);
+            box-shadow: 0 0 8px var(--danger);
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .status-text {
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        /* ===== CENTER CONTENT ===== */
+        .center-content {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        /* ===== TERMINAL CONSOLE ===== */
+        .console-panel {
+            flex: 1;
+            min-height: 400px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .console-output {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+            max-height: 500px;
+        }
+
+        .console-output::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .console-output::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+
+        .console-output::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px;
+        }
+
+        .console-line {
+            margin-bottom: 6px;
+            word-wrap: break-word;
+        }
+
+        .console-line.system {
+            color: var(--accent);
+        }
+
+        .console-line.error {
+            color: var(--danger);
+        }
+
+        .console-line.success {
+            color: var(--success);
+        }
+
+        .console-line.warning {
+            color: var(--warning);
+        }
+
+        .console-line.info {
+            color: var(--info);
+        }
+
+        .console-line.user {
+            color: var(--text-primary);
+        }
+
+        .console-line.ai {
+            color: var(--terminal-green);
+            border-left: 2px solid var(--terminal-green);
+            padding-left: 10px;
+            margin: 8px 0;
+        }
+
+        .console-line.timestamp {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+        }
+
+        .console-input-line {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 15px;
+            border-top: 1px solid var(--border);
+            background: var(--bg-secondary);
+        }
+
+        .console-prompt {
+            color: var(--accent);
+            font-family: 'Consolas', monospace;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .console-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-family: 'Consolas', monospace;
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+        .console-send-btn {
+            padding: 8px 16px;
+            background: var(--accent);
+            border: none;
+            border-radius: var(--radius);
+            color: #000;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .console-send-btn:hover {
+            background: #33ddff;
+        }
+
+        /* ===== COMMAND SUGGESTIONS ===== */
+        .command-suggestions {
+            display: flex;
+            gap: 6px;
+            padding: 8px 15px;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border);
+            flex-wrap: wrap;
+        }
+
+        .suggestion-chip {
+            padding: 4px 10px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .suggestion-chip:hover {
+            background: var(--accent-dim);
+            color: var(--accent);
+            border-color: var(--accent);
+        }
+
+        /* ===== RIGHT PANEL ===== */
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        /* ===== DEVICE LIST ===== */
+        .device-list {
+            max-height: 250px;
+            overflow-y: auto;
+        }
+
+        .device-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .device-item:last-child {
+            border-bottom: none;
+        }
+
+        .device-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--bg-hover);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent);
+            font-size: 0.8rem;
+        }
+
+        .device-info {
+            flex: 1;
+        }
+
+        .device-name {
+            font-size: 0.8rem;
+            color: var(--text-primary);
+        }
+
+        .device-ip {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        .device-status {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .device-status.active {
+            background: var(--success);
+            box-shadow: 0 0 6px var(--success);
+        }
+
+        .device-status.idle {
+            background: var(--warning);
+        }
+
+        /* ===== LOG LIST ===== */
+        .log-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .log-item {
+            padding: 6px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.8rem;
+        }
+
+        .log-item:last-child {
+            border-bottom: none;
+        }
+
+        .log-time {
+            color: var(--text-muted);
+            font-size: 0.7rem;
+        }
+
+        .log-message {
+            color: var(--text-secondary);
+        }
+
+        .log-item.error .log-message {
+            color: var(--danger);
+        }
+
+        .log-item.warning .log-message {
+            color: var(--warning);
+        }
+
+        /* ===== IP LIST (WHITELIST/BLACKLIST) ===== */
+        .ip-list {
+            max-height: 180px;
+            overflow-y: auto;
+        }
+
+        .ip-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .ip-item:last-child {
+            border-bottom: none;
+        }
+
+        .ip-address {
+            font-family: 'Consolas', monospace;
+            font-size: 0.8rem;
+            color: var(--text-primary);
+        }
+
+        .ip-tag {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+        }
+
+        .ip-tag.whitelist {
+            background: var(--success-dim);
+            color: var(--success);
+        }
+
+        .ip-tag.blacklist {
+            background: var(--danger-dim);
+            color: var(--danger);
+        }
+
+        .ip-tag.unknown {
+            background: var(--warning-dim);
+            color: var(--warning);
+        }
+
+        .ip-actions {
+            display: flex;
+            gap: 4px;
+        }
+
+        .ip-action-btn {
+            padding: 3px 8px;
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.7rem;
+            transition: all 0.2s;
+        }
+
+        .ip-action-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .ip-action-btn.approve {
+            border-color: var(--success);
+            color: var(--success);
+        }
+
+        .ip-action-btn.approve:hover {
+            background: var(--success);
+            color: #fff;
+        }
+
+        .ip-action-btn.block {
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+
+        .ip-action-btn.block:hover {
+            background: var(--danger);
+            color: #fff;
+        }
+
+        /* ===== ADD IP FORM ===== */
+        .add-ip-form {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .add-ip-form input {
+            flex: 1;
+            padding: 8px 10px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            color: var(--text-primary);
+            font-size: 0.8rem;
+            outline: none;
+        }
+
+        .add-ip-form input:focus {
+            border-color: var(--accent);
+        }
+
+        .add-ip-form button {
+            padding: 8px 12px;
+            background: var(--accent);
+            border: none;
+            border-radius: var(--radius);
+            color: #000;
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        /* ===== MODAL ===== */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            font-size: 1rem;
+            color: var(--text-primary);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .modal-close:hover {
+            color: var(--text-primary);
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .modal-footer {
+            padding: 15px 20px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px 12px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            color: var(--text-primary);
+            outline: none;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            border-color: var(--accent);
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: var(--radius);
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            border: none;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: #000;
+        }
+
+        .btn-secondary {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: #fff;
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: #fff;
+        }
+
+        /* ===== LOCK CONTROL PANEL ===== */
+        .lock-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .lock-btn {
+            padding: 12px;
+            border-radius: var(--radius);
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.3s;
+        }
+
+        .lock-btn.lock {
+            background: var(--danger);
+            color: #fff;
+        }
+
+        .lock-btn.lock:hover {
+            background: #dc2626;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+        }
+
+        .lock-btn.unlock {
+            background: var(--success);
+            color: #fff;
+        }
+
+        .lock-btn.unlock:hover {
+            background: #16a34a;
+            box-shadow: 0 4px 15px rgba(34, 197, 94, 0.4);
+        }
+
+        .schedule-form {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid var(--border);
+        }
+
+        .schedule-form h4 {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .schedule-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+            align-items: center;
+        }
+
+        .schedule-row label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            min-width: 60px;
+        }
+
+        .schedule-row input {
+            flex: 1;
+            padding: 6px 8px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            color: var(--text-primary);
+            font-size: 0.8rem;
+        }
+
+        /* ===== SCANNING ANIMATION ===== */
+        .scan-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--accent);
+            box-shadow: 0 0 10px var(--accent);
+            animation: scan 3s linear infinite;
+            pointer-events: none;
+            opacity: 0;
+        }
+
+        .panel.scanning .scan-line {
+            opacity: 1;
+        }
+
+        @keyframes scan {
+            0% { top: 0; }
+            100% { top: 100%; }
+        }
+
+        /* ===== NOTIFICATION ===== */
+        .terminal-notification {
+            position: fixed;
+            top: 70px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: var(--radius);
+            color: #fff;
+            font-size: 0.85rem;
+            z-index: 200;
+            animation: slideIn 0.3s ease;
+            max-width: 350px;
+            box-shadow: var(--shadow);
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .terminal-notification.success { background: var(--success); }
+        .terminal-notification.error { background: var(--danger); }
+        .terminal-notification.warning { background: var(--warning); color: #000; }
+        .terminal-notification.info { background: var(--info); }
+
+        /* ===== HIDDEN ===== */
+        .hidden {
+            display: none !important;
+        }
+
+        /* ===== SECTION TOGGLE ===== */
+        .section-toggle {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+
+        .section-toggle button {
+            flex: 1;
+            padding: 6px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: all 0.2s;
+        }
+
+        .section-toggle button.active {
+            background: var(--accent-dim);
+            color: var(--accent);
+            border-color: var(--accent);
+        }
+
+        /* ===== BOOT SEQUENCE ===== */
+        #bootSequence {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-primary);
+            z-index: 9999;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            font-family: 'Consolas', monospace;
+        }
+
+        #bootSequence.show {
+            display: flex;
+        }
+
+        .boot-text {
+            color: var(--accent);
+            font-size: 0.85rem;
+            line-height: 1.8;
+            max-width: 600px;
+            padding: 20px;
+        }
+
+        .boot-line {
+            opacity: 0;
+            animation: bootFade 0.3s forwards;
+        }
+
+        @keyframes bootFade {
+            to { opacity: 1; }
+        }
+
+        /* ===== LOADING SPINNER ===== */
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Boot Sequence -->
+<div id="bootSequence">
+    <div class="boot-text" id="bootText"></div>
+</div>
+
+<!-- Login Screen -->
+<div id="loginScreen">
+    <div class="login-container">
+        <div class="login-header">
+            <i class="fas fa-shield-halved"></i>
+            <h1 data-i18n="loginTitle">安全終端系統</h1>
+            <p data-i18n="loginSubtitle">Security Terminal System</p>
+        </div>
+        <div class="login-form">
+            <div class="form-group">
+                <label for="masterSystemUrl" data-i18n="systemUrlLabel">主系統網址</label>
+                <input type="text" id="masterSystemUrl" placeholder="https://your-system.com or ./index.html" value="">
+            </div>
+            <div class="form-group">
+                <label for="terminalPassword" data-i18n="passwordLabel">終端密碼</label>
+                <input type="password" id="terminalPassword" placeholder="輸入密碼">
+            </div>
+            <button class="login-btn" id="loginBtn" data-i18n="loginBtn">
+                <i class="fas fa-sign-in-alt"></i> 登入終端
+            </button>
+            <div class="login-error" id="loginError"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Terminal App -->
+<div id="terminalApp">
+    <!-- Header -->
+    <div class="terminal-header">
+        <div class="terminal-brand">
+            <i class="fas fa-terminal"></i>
+            <h2 data-i18n="terminalTitle">安全終端</h2>
+            <span id="connectionStatus">CONNECTED</span>
+        </div>
+        <div class="terminal-controls">
+            <button class="ctrl-btn" id="langToggle" onclick="TerminalApp.toggleLanguage()">
+                <i class="fas fa-language"></i> <span id="langLabel">繁中</span>
+            </button>
+            <button class="ctrl-btn" onclick="TerminalApp.showSettings()">
+                <i class="fas fa-cog"></i> <span data-i18n="settings">設置</span>
+            </button>
+            <button class="ctrl-btn" onclick="TerminalApp.showHelp()">
+                <i class="fas fa-question-circle"></i> <span data-i18n="help">幫助</span>
+            </button>
+            <button class="ctrl-btn danger" onclick="TerminalApp.logout()">
+                <i class="fas fa-power-off"></i> <span data-i18n="logout">退出</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Grid -->
+    <div class="terminal-main">
+        <!-- Left Sidebar -->
+        <div class="sidebar">
+            <!-- System Status -->
+            <div class="panel">
+                <div class="panel-header">
+                    <i class="fas fa-heartbeat"></i>
+                    <span data-i18n="systemStatus">系統狀態</span>
+                </div>
+                <div class="panel-body">
+                    <div class="system-status-bar" id="systemStatusBar">
+                        <div class="status-dot"></div>
+                        <span class="status-text" id="systemStatusText" data-i18n="allNormal">所有系統正常</span>
+                    </div>
+                    <div class="status-grid">
+                        <div class="status-item">
+                            <div class="status-value info" id="statDeviceCount">0</div>
+                            <div class="status-label" data-i18n="devices">設備</div>
+                        </div>
+                        <div class="status-item">
+                            <div class="status-value success" id="statUserCount">0</div>
+                            <div class="status-label" data-i18n="users">用戶</div>
+                        </div>
+                        <div class="status-item">
+                            <div class="status-value success" id="statBackupStatus">OK</div>
+                            <div class="status-label" data-i18n="backup">備份</div>
+                        </div>
+                        <div class="status-item">
+                            <div class="status-value info" id="statAlertCount">0</div>
+                            <div class="status-label" data-i18n="alerts">警報</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lock Control -->
+            <div class="panel">
+                <div class="panel-header">
+                    <i class="fas fa-lock"></i>
+                    <span data-i18n="lockControl">鎖定控制</span>
+                </div>
+                <div class="panel-body">
+                    <div class="lock-controls">
+                        <button class="lock-btn lock" id="lockSystemBtn" onclick="TerminalApp.lockSystem()">
+                            <i class="fas fa-lock"></i> <span data-i18n="lockNow">立即鎖定系統</span>
+                        </button>
+                        <button class="lock-btn unlock hidden" id="unlockSystemBtn" onclick="TerminalApp.unlockSystem()">
+                            <i class="fas fa-lock-open"></i> <span data-i18n="unlockNow">立即解鎖系統</span>
+                        </button>
+                    </div>
+                    <div class="schedule-form">
+                        <h4 data-i18n="scheduledLock">定時鎖定/解鎖</h4>
+                        <div class="schedule-row">
+                            <label data-i18n="lockAt">鎖定</label>
+                            <input type="datetime-local" id="scheduleLockTime">
+                        </div>
+                        <div class="schedule-row">
+                            <label data-i18n="unlockAt">解鎖</label>
+                            <input type="datetime-local" id="scheduleUnlockTime">
+                        </div>
+                        <button class="btn btn-primary" style="width:100%;margin-top:5px;font-size:0.8rem;" onclick="TerminalApp.saveSchedule()" data-i18n="saveSchedule">
+                            保存定時設置
+                        </button>
+                        <div id="activeSchedule" style="margin-top:8px;font-size:0.75rem;color:var(--accent);"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Language Switch -->
+            <div class="panel">
+                <div class="panel-header">
+                    <i class="fas fa-globe"></i>
+                    <span data-i18n="language">語言</span>
+                </div>
+                <div class="panel-body">
+                    <div class="section-toggle">
+                        <button class="active" onclick="TerminalApp.setLanguage('zh-TW')">繁體中文</button>
+                        <button onclick="TerminalApp.setLanguage('en')">English</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Center Content -->
+        <div class="center-content">
+            <!-- Terminal Console -->
+            <div class="panel console-panel">
+                <div class="panel-header">
+                    <i class="fas fa-terminal"></i>
+                    <span data-i18n="commandTerminal">指令終端</span>
+                    <span style="margin-left:auto;font-size:0.75rem;color:var(--text-muted);" id="terminalTime"></span>
+                </div>
+                <div class="console-output" id="consoleOutput"></div>
+                <div class="command-suggestions" id="commandSuggestions"></div>
+                <div class="console-input-line">
+                    <span class="console-prompt">$</span>
+                    <input type="text" class="console-input" id="consoleInput" placeholder="輸入指令或描述您想執行的操作..." autocomplete="off">
+                    <button class="console-send-btn" onclick="TerminalApp.executeCommand()">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- IP Management -->
+            <div class="panel">
+                <div class="panel-header">
+                    <i class="fas fa-network-wired"></i>
+                    <span data-i18n="ipManagement">IP 管理</span>
+                </div>
+                <div class="panel-body">
+                    <div class="section-toggle">
+                        <button class="active" onclick="TerminalApp.switchIpTab('whitelist')" data-i18n="whitelist">白名單</button>
+                        <button onclick="TerminalApp.switchIpTab('blacklist')" data-i18n="blacklist">黑名單</button>
+                        <button onclick="TerminalApp.switchIpTab('unknown')" data-i18n="unknown">未知</button>
+                    </div>
+                    <div class="ip-list" id="ipList"></div>
+                    <div class="add-ip-form">
+                        <input type="text" id="newIpInput" placeholder="IP 地址">
+                        <button onclick="TerminalApp.addIp()" data-i18n="add">添加</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel -->
+        <div class="right-panel">
+            <!-- Connected Devices -->
+            <div class="panel">
+                <div class="panel-header">
+                    <i class="fas fa-desktop"></i>
+                    <span data-i18n="connectedDevices">連接設備</span>
+                    <span style="margin-left:auto;font-size:0.75rem;color:var(--accent);" id="deviceCount">0</span>
+                </div>
+                <div class="panel-body">
+                    <div class="device-list" id="deviceList"></div>
+                </div>
+            </div>
+
+            <!-- Recent Logins -->
+            <div class="panel">
+                <div class="panel-header">
+                    <i class="fas fa-user-clock"></i>
+                    <span data-i18n="recentLogins">最近登錄</span>
+                </div>
+                <div class="panel-body">
+                    <div class="log-list" id="loginList"></div>
+                </div>
+            </div>
+
+            <!-- Security Logs -->
+            <div class="panel">
+                <div class="panel-header">
+                    <i class="fas fa-shield-halved"></i>
+                    <span data-i18n="securityLogs">安全日誌</span>
+                </div>
+                <div class="panel-body">
+                    <div class="log-list" id="securityLogList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Settings Modal -->
+<div class="modal-overlay" id="settingsModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 data-i18n="settingsTitle">終端設置</h3>
+            <button class="modal-close" onclick="TerminalApp.closeModal('settingsModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label data-i18n="changePassword">修改終端密碼</label>
+                <input type="password" id="currentPassword" placeholder="當前密碼">
+            </div>
+            <div class="form-group">
+                <input type="password" id="newPassword" placeholder="新密碼">
+            </div>
+            <div class="form-group">
+                <input type="password" id="confirmNewPassword" placeholder="確認新密碼">
+            </div>
+            <div class="form-group">
+                <label data-i18n="masterUrl">主系統網址</label>
+                <input type="text" id="settingsMasterUrl" placeholder="輸入主系統網址">
+            </div>
+            <div class="form-group">
+                <label data-i18n="autoLock">自動鎖定（分鐘，0=關閉）</label>
+                <input type="number" id="autoLockMinutes" placeholder="0" min="0" value="0">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="TerminalApp.closeModal('settingsModal')" data-i18n="cancel">取消</button>
+            <button class="btn btn-primary" onclick="TerminalApp.saveSettings()" data-i18n="save">保存</button>
+        </div>
+    </div>
+</div>
+
+<!-- Help Modal -->
+<div class="modal-overlay" id="helpModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 data-i18n="helpTitle">終端指令幫助</h3>
+            <button class="modal-close" onclick="TerminalApp.closeModal('helpModal')">&times;</button>
+        </div>
+        <div class="modal-body" id="helpContent">
+            <!-- Populated by JS -->
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="TerminalApp.closeModal('helpModal')" data-i18n="close">關閉</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// ===== TERMINAL APPLICATION =====
+const TerminalApp = {
+    // State
+    isLoggedIn: false,
+    currentLang: 'zh-TW',
+    systemLocked: false,
+    ipTab: 'whitelist',
+    commands: [],
+    pollingInterval: null,
+    scheduleCheckInterval: null,
+    masterUrl: '',
+    settings: {
+        password: 'admin123',
+        autoLockMinutes: 0,
+        lastActivity: Date.now()
+    },
+    data: {
+        whitelist: ['127.0.0.1'],
+        blacklist: [],
+        unknown: [],
+        devices: [],
+        logs: [],
+        loginHistory: [],
+        schedule: null
+    },
+
+    // Translations
+    i18n: {
+        'zh-TW': {
+            loginTitle: '安全終端系統',
+            loginSubtitle: 'Security Terminal System',
+            systemUrlLabel: '主系統網址',
+            passwordLabel: '終端密碼',
+            loginBtn: '登入終端',
+            loginError: '密碼錯誤，請重試',
+            urlError: '請輸入主系統網址',
+            terminalTitle: '安全終端',
+            settings: '設置',
+            help: '幫助',
+            logout: '退出',
+            systemStatus: '系統狀態',
+            allNormal: '所有系統正常',
+            hasAlert: '檢測到安全警報',
+            devices: '設備',
+            users: '用戶',
+            backup: '備份',
+            alerts: '警報',
+            lockControl: '鎖定控制',
+            lockNow: '立即鎖定系統',
+            unlockNow: '立即解鎖系統',
+            scheduledLock: '定時鎖定/解鎖',
+            lockAt: '鎖定',
+            unlockAt: '解鎖',
+            saveSchedule: '保存定時設置',
+            language: '語言',
+            commandTerminal: '指令終端',
+            ipManagement: 'IP 管理',
+            whitelist: '白名單',
+            blacklist: '黑名單',
+            unknown: '未知',
+            add: '添加',
+            connectedDevices: '連接設備',
+            recentLogins: '最近登錄',
+            securityLogs: '安全日誌',
+            settingsTitle: '終端設置',
+            changePassword: '修改終端密碼',
+            currentPassword: '當前密碼',
+            newPassword: '新密碼',
+            confirmPassword: '確認新密碼',
+            masterUrl: '主系統網址',
+            autoLock: '自動鎖定（分鐘，0=關閉）',
+            cancel: '取消',
+            save: '保存',
+            helpTitle: '終端指令幫助',
+            close: '關閉',
+            welcomeMsg: '=== 安全終端已啟動 ===',
+            enterCommand: '輸入 "help" 查看可用指令，或直接描述您想執行的操作',
+            systemLockedMsg: '系統已被鎖定！所有用戶無法登錄。',
+            systemUnlockedMsg: '系統已解鎖。用戶可以正常登錄。',
+            passwordChanged: '密碼修改成功',
+            passwordMismatch: '新密碼不一致',
+            passwordWrong: '當前密碼錯誤',
+            ipAdded: 'IP 已添加',
+            ipExists: 'IP 已存在',
+            ipRemoved: 'IP 已移除',
+            scheduleSaved: '定時設置已保存',
+            connected: '已連接',
+            disconnected: '未連接',
+            noData: '暫無數據',
+            helpContent: `
+                <h4>可用指令：</h4>
+                <p><strong>help</strong> - 顯示幫助信息</p>
+                <p><strong>status</strong> - 查看系統狀態</p>
+                <p><strong>users</strong> - 列出所有用戶</p>
+                <p><strong>lock</strong> - 鎖定系統</p>
+                <p><strong>unlock</strong> - 解鎖系統</p>
+                <p><strong>backup</strong> - 手動觸發備份</p>
+                <p><strong>logs</strong> - 查看操作日誌</p>
+                <p><strong>devices</strong> - 查看連接設備</p>
+                <p><strong>whitelist add IP</strong> - 添加IP到白名單</p>
+                <p><strong>blacklist add IP</strong> - 添加IP到黑名單</p>
+                <p><strong>clear</strong> - 清除終端畫面</p>
+                <h4 style="margin-top:15px;">AI 指令（直接輸入描述）：</h4>
+                <p>"鎖定系統" - 鎖定整個系統</p>
+                <p>"顯示所有用戶" - 列出用戶</p>
+                <p>"備份數據" - 觸發備份</p>
+                <p>"顯示狀態" - 查看系統狀態</p>
+            `
+        },
+        'en': {
+            loginTitle: 'Security Terminal System',
+            loginSubtitle: 'Control Center',
+            systemUrlLabel: 'Master System URL',
+            passwordLabel: 'Terminal Password',
+            loginBtn: 'Login to Terminal',
+            loginError: 'Invalid password, please try again',
+            urlError: 'Please enter master system URL',
+            terminalTitle: 'Security Terminal',
+            settings: 'Settings',
+            help: 'Help',
+            logout: 'Logout',
+            systemStatus: 'System Status',
+            allNormal: 'All Systems Normal',
+            hasAlert: 'Security Alert Detected',
+            devices: 'Devices',
+            users: 'Users',
+            backup: 'Backup',
+            alerts: 'Alerts',
+            lockControl: 'Lock Control',
+            lockNow: 'Lock System Now',
+            unlockNow: 'Unlock System Now',
+            scheduledLock: 'Scheduled Lock/Unlock',
+            lockAt: 'Lock At',
+            unlockAt: 'Unlock At',
+            saveSchedule: 'Save Schedule',
+            language: 'Language',
+            commandTerminal: 'Command Terminal',
+            ipManagement: 'IP Management',
+            whitelist: 'Whitelist',
+            blacklist: 'Blacklist',
+            unknown: 'Unknown',
+            add: 'Add',
+            connectedDevices: 'Connected Devices',
+            recentLogins: 'Recent Logins',
+            securityLogs: 'Security Logs',
+            settingsTitle: 'Terminal Settings',
+            changePassword: 'Change Terminal Password',
+            currentPassword: 'Current Password',
+            newPassword: 'New Password',
+            confirmPassword: 'Confirm Password',
+            masterUrl: 'Master System URL',
+            autoLock: 'Auto Lock (minutes, 0=off)',
+            cancel: 'Cancel',
+            save: 'Save',
+            helpTitle: 'Terminal Command Help',
+            close: 'Close',
+            welcomeMsg: '=== Security Terminal Started ===',
+            enterCommand: 'Type "help" for commands, or describe what you want to do',
+            systemLockedMsg: 'System is LOCKED! All users cannot login.',
+            systemUnlockedMsg: 'System is unlocked. Users can login normally.',
+            passwordChanged: 'Password changed successfully',
+            passwordMismatch: 'New passwords do not match',
+            passwordWrong: 'Current password is wrong',
+            ipAdded: 'IP added',
+            ipExists: 'IP already exists',
+            ipRemoved: 'IP removed',
+            scheduleSaved: 'Schedule saved',
+            connected: 'Connected',
+            disconnected: 'Disconnected',
+            noData: 'No data',
+            helpContent: `
+                <h4>Available Commands:</h4>
+                <p><strong>help</strong> - Show help info</p>
+                <p><strong>status</strong> - View system status</p>
+                <p><strong>users</strong> - List all users</p>
+                <p><strong>lock</strong> - Lock the system</p>
+                <p><strong>unlock</strong> - Unlock the system</p>
+                <p><strong>backup</strong> - Trigger manual backup</p>
+                <p><strong>logs</strong> - View operation logs</p>
+                <p><strong>devices</strong> - View connected devices</p>
+                <p><strong>whitelist add IP</strong> - Add IP to whitelist</p>
+                <p><strong>blacklist add IP</strong> - Add IP to blacklist</p>
+                <p><strong>clear</strong> - Clear terminal</p>
+                <h4 style="margin-top:15px;">AI Commands (describe what you want):</h4>
+                <p>"lock system" - Lock the entire system</p>
+                <p>"show all users" - List users</p>
+                <p>"backup data" - Trigger backup</p>
+                <p>"show status" - View system status</p>
+            `
+        }
+    },
+
+    // ===== INITIALIZATION =====
+    init() {
+        this.loadSettings();
+        this.loadData();
+        this.bindEvents();
+        this.updateTime();
+        setInterval(() => this.updateTime(), 1000);
+
+        // Check if already has saved credentials
+        const savedUrl = localStorage.getItem('terminalMasterUrl') || '';
+        if (savedUrl) {
+            document.getElementById('masterSystemUrl').value = savedUrl;
+        }
+
+        // Check auto-lock
+        this.checkAutoLock();
+        setInterval(() => this.checkAutoLock(), 60000);
+    },
+
+    loadSettings() {
+        try {
+            const saved = localStorage.getItem('terminalSettings');
+            if (saved) {
+                this.settings = JSON.parse(saved);
+            }
+        } catch (e) {}
+    },
+
+    saveSettings() {
+        localStorage.setItem('terminalSettings', JSON.stringify(this.settings));
+    },
+
+    loadData() {
+        try {
+            const saved = localStorage.getItem('terminalData');
+            if (saved) {
+                this.data = JSON.parse(saved);
+            }
+        } catch (e) {}
+    },
+
+    saveData() {
+        localStorage.setItem('terminalData', JSON.stringify(this.data));
+    },
+
+    // ===== LOGIN =====
+    bindEvents() {
+        document.getElementById('loginBtn').addEventListener('click', () => this.login());
+        document.getElementById('terminalPassword').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') this.login();
+        });
+        document.getElementById('consoleInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') this.executeCommand();
+        });
+
+        // Listen for system data from main system
+        window.addEventListener('storage', (e) => this.handleStorageChange(e));
+        window.addEventListener('message', (e) => this.handleMessage(e));
+    },
+
+    async login() {
+        const urlInput = document.getElementById('masterSystemUrl').value.trim();
+        const passwordInput = document.getElementById('terminalPassword').value;
+        const errorEl = document.getElementById('loginError');
+
+        if (!urlInput) {
+            errorEl.textContent = this.t('urlError');
+            errorEl.classList.add('show');
+            return;
+        }
+
+        const hashedInput = this.hashPassword(passwordInput);
+        const savedHash = this.settings.passwordHash || this.hashPassword('admin123');
+
+        if (hashedInput !== savedHash && passwordInput !== this.settings.password) {
+            errorEl.textContent = this.t('loginError');
+            errorEl.classList.add('show');
+            return;
+        }
+
+        // Save password hash if using plain text
+        if (passwordInput === this.settings.password) {
+            this.settings.passwordHash = this.hashPassword(passwordInput);
+        }
+
+        this.masterUrl = urlInput;
+        localStorage.setItem('terminalMasterUrl', urlInput);
+        localStorage.setItem('terminalConnectionActive', 'true');
+        localStorage.setItem('terminalConnectTime', new Date().toISOString());
+
+        this.isLoggedIn = true;
+        this.settings.lastActivity = Date.now();
+        this.saveSettings();
+
+        // Show boot sequence
+        await this.showBootSequence();
+
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('terminalApp').style.display = 'block';
+
+        this.initTerminal();
+    },
+
+    async showBootSequence() {
+        return new Promise(resolve => {
+            const boot = document.getElementById('bootSequence');
+            const bootText = document.getElementById('bootText');
+            boot.classList.add('show');
+
+            const lines = this.currentLang === 'zh-TW' ? [
+                '正在初始化安全終端...',
+                '載入系統配置...',
+                '連接主系統...',
+                '驗證安全憑證...',
+                '載入IP白名單...',
+                '啟動設備監控...',
+                '系統就緒。'
+            ] : [
+                'Initializing security terminal...',
+                'Loading system config...',
+                'Connecting to master system...',
+                'Verifying security credentials...',
+                'Loading IP whitelist...',
+                'Starting device monitoring...',
+                'System ready.'
+            ];
+
+            bootText.innerHTML = '';
+            let i = 0;
+            const addLine = () => {
+                if (i < lines.length) {
+                    const div = document.createElement('div');
+                    div.className = 'boot-line';
+                    div.textContent = `> ${lines[i]}`;
+                    div.style.animationDelay = `${i * 0.1}s`;
+                    bootText.appendChild(div);
+                    i++;
+                    setTimeout(addLine, 300);
+                } else {
+                    setTimeout(() => {
+                        boot.classList.remove('show');
+                        resolve();
+                    }, 500);
+                }
+            };
+            addLine();
+        });
+    },
+
+    hashPassword(password) {
+        let hash = 0;
+        for (let i = 0; i < password.length; i++) {
+            const char = password.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash |= 0;
+        }
+        return 'tm_' + Math.abs(hash).toString(16);
+    },
+
+    // ===== TERMINAL INIT =====
+    initTerminal() {
+        this.printWelcome();
+        this.updateDisplay();
+        this.startPolling();
+        this.startScheduleCheck();
+        this.applyLanguage();
+
+        // Check system lock status from main system
+        const lockStatus = localStorage.getItem('systemLockStatus');
+        if (lockStatus === 'locked') {
+            this.systemLocked = true;
+            this.updateLockButtons();
+        }
+
+        // Listen for unknown IPs
+        this.detectUnknownIps();
+    },
+
+    printWelcome() {
+        this.addConsoleLine(this.t('welcomeMsg'), 'system');
+        this.addConsoleLine(this.t('enterCommand'), 'info');
+    },
+
+    // ===== CONSOLE =====
+    addConsoleLine(text, type = 'info') {
+        const output = document.getElementById('consoleOutput');
+        const line = document.createElement('div');
+        line.className = `console-line ${type}`;
+
+        const now = new Date().toLocaleTimeString();
+        const timestamp = document.createElement('span');
+        timestamp.className = 'timestamp';
+        timestamp.textContent = `[${now}] `;
+
+        line.appendChild(timestamp);
+        line.appendChild(document.createTextNode(text));
+        output.appendChild(line);
+        output.scrollTop = output.scrollHeight;
+    },
+
+    executeCommand() {
+        const input = document.getElementById('consoleInput');
+        const command = input.value.trim();
+        if (!command) return;
+
+        input.value = '';
+        this.addConsoleLine(`$ ${command}`, 'user');
+
+        // Check if system is locked and command is not unlock
+        if (this.systemLocked && !command.toLowerCase().includes('unlock')) {
+            this.addConsoleLine('SYSTEM LOCKED - Only unlock command is allowed', 'error');
+            return;
+        }
+
+        this.processCommand(command);
+        this.settings.lastActivity = Date.now();
+        this.saveSettings();
+    },
+
+    processCommand(command) {
+        const cmd = command.toLowerCase();
+
+        // AI-style natural language processing
+        if (this.isNaturalLanguageCommand(cmd)) {
+            this.processAICommand(cmd);
+            return;
+        }
+
+        const parts = cmd.split(' ');
+        const main = parts[0];
+
+        switch (main) {
+            case 'help':
+            case '?':
+                this.showHelpInConsole();
+                break;
+            case 'status':
+                this.showStatus();
+                break;
+            case 'users':
+                this.showUsers();
+                break;
+            case 'lock':
+                this.lockSystem();
+                break;
+            case 'unlock':
+                this.unlockSystem();
+                break;
+            case 'backup':
+                this.triggerBackup();
+                break;
+            case 'logs':
+                this.showLogs();
+                break;
+            case 'devices':
+                this.showDevices();
+                break;
+            case 'clear':
+                document.getElementById('consoleOutput').innerHTML = '';
+                break;
+            case 'whitelist':
+                if (parts[1] === 'add' && parts[2]) {
+                    this.addToList('whitelist', parts[2]);
+                } else {
+                    this.showIpList('whitelist');
+                }
+                break;
+            case 'blacklist':
+                if (parts[1] === 'add' && parts[2]) {
+                    this.addToList('blacklist', parts[2]);
+                } else {
+                    this.showIpList('blacklist');
+                }
+                break;
+            default:
+                this.addConsoleLine(`Unknown command: ${main}. Type "help" for available commands.`, 'error');
+        }
+    },
+
+    isNaturalLanguageCommand(cmd) {
+        const aiKeywords = ['lock', 'unlock', 'backup', 'status', 'user', 'device', 'log', 'help', 'clear',
+            '鎖定', '解鎖', '備份', '狀態', '用戶', '設備', '日誌', '幫助',
+            'show', 'list', 'display', 'check', 'view',
+            '顯示', '列出', '查看', '檢查'];
+        return aiKeywords.some(kw => cmd.includes(kw)) && cmd.split(' ').length > 1;
+    },
+
+    processAICommand(cmd) {
+        const responses = {
+            'zh-TW': {
+                lock: '正在執行：鎖定系統...',
+                unlock: '正在執行：解鎖系統...',
+                backup: '正在執行：觸發數據備份...',
+                status: '正在查詢系統狀態...',
+                users: '正在獲取用戶列表...',
+                devices: '正在獲取設備列表...',
+                logs: '正在獲取日誌...',
+                whitelist: '正在處理白名單...',
+                blacklist: '正在處理黑名單...',
+                done: '操作完成。',
+                needPassword: '執行此敏感操作需要密碼。請使用指令格式：command [password]'
+            },
+            'en': {
+                lock: 'Executing: Lock system...',
+                unlock: 'Executing: Unlock system...',
+                backup: 'Executing: Trigger data backup...',
+                status: 'Querying system status...',
+                users: 'Getting user list...',
+                devices: 'Getting device list...',
+                logs: 'Getting logs...',
+                whitelist: 'Processing whitelist...',
+                blacklist: 'Processing blacklist...',
+                done: 'Operation completed.',
+                needPassword: 'Password required for sensitive operation. Use format: command [password]'
+            }
+        };
+        const r = responses[this.currentLang];
+
+        // Determine intent
+        if (cmd.includes('lock') || cmd.includes('鎖定')) {
+            this.addConsoleLine(r.lock, 'ai');
+            if (cmd.includes('unlock') || cmd.includes('解鎖')) {
+                setTimeout(() => this.unlockSystem(), 500);
+            } else {
+                setTimeout(() => this.lockSystem(), 500);
+            }
+        } else if (cmd.includes('backup') || cmd.includes('備份')) {
+            this.addConsoleLine(r.backup, 'ai');
+            setTimeout(() => this.triggerBackup(), 500);
+        } else if (cmd.includes('status') || cmd.includes('狀態')) {
+            this.addConsoleLine(r.status, 'ai');
+            setTimeout(() => this.showStatus(), 500);
+        } else if (cmd.includes('user') || cmd.includes('用戶')) {
+            this.addConsoleLine(r.users, 'ai');
+            setTimeout(() => this.showUsers(), 500);
+        } else if (cmd.includes('device') || cmd.includes('設備')) {
+            this.addConsoleLine(r.devices, 'ai');
+            setTimeout(() => this.showDevices(), 500);
+        } else if (cmd.includes('log') || cmd.includes('日誌')) {
+            this.addConsoleLine(r.logs, 'ai');
+            setTimeout(() => this.showLogs(), 500);
+        } else if (cmd.includes('whitelist') || cmd.includes('白名單')) {
+            this.addConsoleLine(r.whitelist, 'ai');
+            setTimeout(() => this.showIpList('whitelist'), 500);
+        } else if (cmd.includes('blacklist') || cmd.includes('黑名單')) {
+            this.addConsoleLine(r.blacklist, 'ai');
+            setTimeout(() => this.showIpList('blacklist'), 500);
+        } else {
+            this.addConsoleLine('AI: I understood you want to perform an action. Please be more specific or use "help".', 'ai');
+            return;
+        }
+
+        setTimeout(() => this.addConsoleLine(r.done, 'success'), 1500);
+    },
+
+    // ===== COMMANDS =====
+    showStatus() {
+        const users = JSON.parse(localStorage.getItem('users') || '[]');
+        const loginHistory = JSON.parse(localStorage.getItem('loginHistory') || '[]');
+        const history = JSON.parse(localStorage.getItem('history') || '[]');
+        const lastBackup = localStorage.getItem('githubLastSave') || localStorage.getItem('lastBackupTime');
+
+        this.addConsoleLine('=== SYSTEM STATUS ===', 'system');
+        this.addConsoleLine(`Total Users: ${users.length}`, 'info');
+        this.addConsoleLine(`Total History Records: ${history.length}`, 'info');
+        this.addConsoleLine(`Login Records: ${loginHistory.length}`, 'info');
+        this.addConsoleLine(`System Lock: ${this.systemLocked ? 'LOCKED' : 'Unlocked'}`, this.systemLocked ? 'warning' : 'success');
+        this.addConsoleLine(`Backup Status: ${lastBackup ? 'Backed up at ' + new Date(lastBackup).toLocaleString() : 'No backup'}`, lastBackup ? 'success' : 'warning');
+        this.addConsoleLine(`Whitelist IPs: ${this.data.whitelist.length}`, 'info');
+        this.addConsoleLine(`Blacklist IPs: ${this.data.blacklist.length}`, 'info');
+        this.addConsoleLine(`Connected Devices: ${this.data.devices.length}`, 'info');
+    },
+
+    showUsers() {
+        const users = JSON.parse(localStorage.getItem('users') || '[]');
+        this.addConsoleLine(`=== USERS (${users.length}) ===`, 'system');
+        users.slice(0, 20).forEach(u => {
+            const line = `${u.id} | ${u.name} | Points: ${u.points || 0} | ${u.isAdmin ? 'ADMIN' : 'User'}`;
+            this.addConsoleLine(line, 'info');
+        });
+        if (users.length > 20) {
+            this.addConsoleLine(`... and ${users.length - 20} more`, 'warning');
+        }
+    },
+
+    showLogs() {
+        const logs = JSON.parse(localStorage.getItem('operationLogs') || '[]');
+        this.addConsoleLine(`=== OPERATION LOGS (${logs.length}) ===`, 'system');
+        logs.slice(0, 15).forEach(log => {
+            const line = `${new Date(log.time).toLocaleTimeString()} | ${log.operator} | ${log.action} | ${log.status}`;
+            this.addConsoleLine(line, log.status === 'error' ? 'error' : 'info');
+        });
+    },
+
+    showDevices() {
+        this.addConsoleLine(`=== DEVICES (${this.data.devices.length}) ===`, 'system');
+        this.data.devices.forEach(d => {
+            this.addConsoleLine(`${d.id} | ${d.ip} | ${d.status}`, 'info');
+        });
+    },
+
+    showIpList(type) {
+        const list = this.data[type] || [];
+        this.addConsoleLine(`=== ${type.toUpperCase()} (${list.length}) ===`, 'system');
+        list.forEach(ip => this.addConsoleLine(ip, 'info'));
+    },
+
+    triggerBackup() {
+        localStorage.setItem('lastBackupTime', new Date().toISOString());
+        localStorage.setItem('terminalBackupTriggered', Date.now().toString());
+        this.addConsoleLine('Backup triggered successfully!', 'success');
+        this.addConsoleLine('Timestamp: ' + new Date().toLocaleString(), 'info');
+        this.logSecurity('backup', 'Manual backup triggered from terminal');
+    },
+
+    // ===== LOCK SYSTEM =====
+    lockSystem() {
+        this.systemLocked = true;
+        localStorage.setItem('systemLockStatus', 'locked');
+        localStorage.setItem('systemLockTime', new Date().toISOString());
+        localStorage.setItem('systemLockedBy', 'terminal');
+
+        this.updateLockButtons();
+        this.addConsoleLine(this.t('systemLockedMsg'), 'error');
+        this.showNotification(this.t('systemLockedMsg'), 'error');
+        this.logSecurity('lock', 'System locked from terminal');
+        this.updateDisplay();
+    },
+
+    unlockSystem() {
+        this.systemLocked = false;
+        localStorage.removeItem('systemLockStatus');
+        localStorage.removeItem('systemLockTime');
+        localStorage.setItem('systemUnlockTime', new Date().toISOString());
+
+        this.updateLockButtons();
+        this.addConsoleLine(this.t('systemUnlockedMsg'), 'success');
+        this.showNotification(this.t('systemUnlockedMsg'), 'success');
+        this.logSecurity('unlock', 'System unlocked from terminal');
+        this.updateDisplay();
+    },
+
+    updateLockButtons() {
+        const lockBtn = document.getElementById('lockSystemBtn');
+        const unlockBtn = document.getElementById('unlockSystemBtn');
+
+        if (this.systemLocked) {
+            lockBtn.classList.add('hidden');
+            unlockBtn.classList.remove('hidden');
+        } else {
+            lockBtn.classList.remove('hidden');
+            unlockBtn.classList.add('hidden');
+        }
+    },
+
+    saveSchedule() {
+        const lockTime = document.getElementById('scheduleLockTime').value;
+        const unlockTime = document.getElementById('scheduleUnlockTime').value;
+
+        this.data.schedule = { lockTime, unlockTime };
+        this.saveData();
+
+        const display = document.getElementById('activeSchedule');
+        if (lockTime || unlockTime) {
+            const lText = lockTime ? `Lock: ${new Date(lockTime).toLocaleString()}` : '';
+            const uText = unlockTime ? `Unlock: ${new Date(unlockTime).toLocaleString()}` : '';
+            display.textContent = [lText, uText].filter(Boolean).join(' | ');
+        } else {
+            display.textContent = '';
+        }
+
+        this.addConsoleLine(this.t('scheduleSaved'), 'success');
+        this.showNotification(this.t('scheduleSaved'), 'success');
+    },
+
+    startScheduleCheck() {
+        this.scheduleCheckInterval = setInterval(() => {
+            if (!this.data.schedule) return;
+
+            const now = new Date();
+            const lockTime = this.data.schedule.lockTime ? new Date(this.data.schedule.lockTime) : null;
+            const unlockTime = this.data.schedule.unlockTime ? new Date(this.data.schedule.unlockTime) : null;
+
+            if (lockTime && now >= lockTime && !this.systemLocked) {
+                this.addConsoleLine('Scheduled lock triggered!', 'warning');
+                this.lockSystem();
+                this.data.schedule.lockTime = null;
+                this.saveData();
+            }
+
+            if (unlockTime && now >= unlockTime && this.systemLocked) {
+                this.addConsoleLine('Scheduled unlock triggered!', 'success');
+                this.unlockSystem();
+                this.data.schedule.unlockTime = null;
+                this.saveData();
+            }
+        }, 30000);
+    },
+
+    // ===== IP MANAGEMENT =====
+    switchIpTab(tab) {
+        this.ipTab = tab;
+        document.querySelectorAll('.section-toggle button').forEach((btn, i) => {
+            btn.classList.toggle('active', (tab === 'whitelist' && i === 0) || (tab === 'blacklist' && i === 1) || (tab === 'unknown' && i === 2));
+        });
+        this.renderIpList();
+    },
+
+    renderIpList() {
+        const listEl = document.getElementById('ipList');
+        const ips = this.data[this.ipTab] || [];
+
+        if (ips.length === 0) {
+            listEl.innerHTML = `<p style="color:var(--text-muted);text-align:center;padding:10px;">${this.t('noData')}</p>`;
+            return;
+        }
+
+        listEl.innerHTML = ips.map(ip => `
+            <div class="ip-item">
+                <span class="ip-address">${ip}</span>
+                <span class="ip-tag ${this.ipTab}">${this.ipTab === 'whitelist' ? '允许' : this.ipTab === 'blacklist' ? '阻止' : '未知'}</span>
+                <div class="ip-actions">
+                    ${this.ipTab === 'unknown' ? `
+                        <button class="ip-action-btn approve" onclick="TerminalApp.approveIp('${ip}')">允许</button>
+                        <button class="ip-action-btn block" onclick="TerminalApp.blockIp('${ip}')">阻止</button>
+                    ` : `
+                        <button class="ip-action-btn block" onclick="TerminalApp.removeIp('${ip}')">移除</button>
+                    `}
+                </div>
+            </div>
+        `).join('');
+    },
+
+    addIp() {
+        const input = document.getElementById('newIpInput');
+        const ip = input.value.trim();
+        if (!ip) return;
+
+        if (this.data[this.ipTab].includes(ip)) {
+            this.showNotification(this.t('ipExists'), 'warning');
+            return;
+        }
+
+        this.data[this.ipTab].push(ip);
+        this.saveData();
+        input.value = '';
+        this.renderIpList();
+        this.showNotification(this.t('ipAdded'), 'success');
+        this.addConsoleLine(`${this.ipTab}: Added ${ip}`, 'success');
+    },
+
+    removeIp(ip) {
+        this.data[this.ipTab] = this.data[this.ipTab].filter(i => i !== ip);
+        this.saveData();
+        this.renderIpList();
+        this.showNotification(this.t('ipRemoved'), 'info');
+    },
+
+    approveIp(ip) {
+        this.data.unknown = this.data.unknown.filter(i => i !== ip);
+        if (!this.data.whitelist.includes(ip)) {
+            this.data.whitelist.push(ip);
+        }
+        this.saveData();
+        this.renderIpList();
+        this.addConsoleLine(`IP ${ip} approved and added to whitelist`, 'success');
+        this.logSecurity('ip_approve', `Approved IP: ${ip}`);
+    },
+
+    blockIp(ip) {
+        this.data.unknown = this.data.unknown.filter(i => i !== ip);
+        if (!this.data.blacklist.includes(ip)) {
+            this.data.blacklist.push(ip);
+        }
+        this.saveData();
+        this.renderIpList();
+        this.addConsoleLine(`IP ${ip} blocked and added to blacklist`, 'error');
+        this.logSecurity('ip_block', `Blocked IP: ${ip}`);
+    },
+
+    detectUnknownIps() {
+        const loginHistory = JSON.parse(localStorage.getItem('loginHistory') || '[]');
+        const knownIps = [...this.data.whitelist, ...this.data.blacklist];
+
+        loginHistory.forEach(log => {
+            const ip = log.ip || '127.0.0.1';
+            if (!knownIps.includes(ip) && !this.data.unknown.includes(ip)) {
+                this.data.unknown.push(ip);
+                this.addConsoleLine(`Unknown IP detected: ${ip} (Login by ${log.userName || 'Unknown'})`, 'warning');
+                this.logSecurity('unknown_ip', `Unknown IP: ${ip}`);
+            }
+        });
+
+        if (this.data.unknown.length > 0) {
+            this.saveData();
+        }
+    },
+
+    // ===== POLLING =====
+    startPolling() {
+        // Initial sync
+        this.syncFromMainSystem();
+
+        // Poll every 5 seconds
+        this.pollingInterval = setInterval(() => {
+            this.syncFromMainSystem();
+        }, 5000);
+    },
+
+    syncFromMainSystem() {
+        try {
+            // Read data from main system's localStorage entries
+            const systemData = localStorage.getItem('terminalSystemData');
+            if (systemData) {
+                try {
+                    const parsed = JSON.parse(systemData);
+                    if (parsed.devices) {
+                        this.data.devices = parsed.devices;
+                    }
+                } catch (e) {}
+            }
+
+            // Update login history
+            const loginHistory = JSON.parse(localStorage.getItem('loginHistory') || '[]');
+            this.data.loginHistory = loginHistory.slice(0, 20);
+
+            // Check system lock status
+            const lockStatus = localStorage.getItem('systemLockStatus');
+            const wasLocked = this.systemLocked;
+            this.systemLocked = lockStatus === 'locked';
+            if (wasLocked !== this.systemLocked) {
+                this.updateLockButtons();
+            }
+
+            // Detect unknown IPs
+            this.detectUnknownIps();
+
+            this.updateDisplay();
+        } catch (e) {
+            console.error('[Terminal] Sync error:', e);
+        }
+    },
+
+    handleStorageChange(e) {
+        if (e.key === 'terminalSystemData' || e.key === 'loginHistory' || e.key === 'systemLockStatus') {
+            this.syncFromMainSystem();
+        }
+    },
+
+    handleMessage(e) {
+        if (e.data && e.data.type === 'TERMINAL_SYNC') {
+            this.syncFromMainSystem();
+        }
+    },
+
+    // ===== DISPLAY UPDATE =====
+    updateDisplay() {
+        const users = JSON.parse(localStorage.getItem('users') || '[]');
+        const loginHistory = JSON.parse(localStorage.getItem('loginHistory') || '[]');
+        const lastBackup = localStorage.getItem('githubLastSave') || localStorage.getItem('lastBackupTime');
+
+        // Stats
+        document.getElementById('statDeviceCount').textContent = this.data.devices.length;
+        document.getElementById('statUserCount').textContent = users.length;
+        document.getElementById('statBackupStatus').textContent = lastBackup ? 'OK' : 'NO';
+        document.getElementById('statBackupStatus').className = 'status-value ' + (lastBackup ? 'success' : 'warning');
+
+        // System status bar
+        const statusBar = document.getElementById('systemStatusBar');
+        const statusText = document.getElementById('systemStatusText');
+
+        if (this.systemLocked) {
+            statusBar.className = 'system-status-bar alert';
+            statusText.textContent = this.currentLang === 'zh-TW' ? '系統已鎖定' : 'SYSTEM LOCKED';
+        } else if (this.data.unknown.length > 0) {
+            statusBar.className = 'system-status-bar warning';
+            statusText.textContent = this.t('hasAlert');
+        } else {
+            statusBar.className = 'system-status-bar';
+            statusText.textContent = this.t('allNormal');
+        }
+
+        // Device list
+        this.renderDeviceList();
+
+        // Login list
+        this.renderLoginList();
+
+        // Security logs
+        this.renderSecurityLogs();
+
+        // IP list
+        this.renderIpList();
+
+        // Device count badge
+        document.getElementById('deviceCount').textContent = this.data.devices.length;
+    },
+
+    renderDeviceList() {
+        const listEl = document.getElementById('deviceList');
+        if (this.data.devices.length === 0) {
+            listEl.innerHTML = `<p style="color:var(--text-muted);text-align:center;font-size:0.8rem;">${this.t('noData')}</p>`;
+            return;
+        }
+
+        listEl.innerHTML = this.data.devices.slice(0, 8).map(d => `
+            <div class="device-item">
+                <div class="device-icon"><i class="fas fa-${d.status === 'active' ? 'desktop' : 'power-off'}"></i></div>
+                <div class="device-info">
+                    <div class="device-name">${d.id}</div>
+                    <div class="device-ip">${d.ip}</div>
+                </div>
+                <div class="device-status ${d.status}"></div>
+            </div>
+        `).join('');
+    },
+
+    renderLoginList() {
+        const listEl = document.getElementById('loginList');
+        if (this.data.loginHistory.length === 0) {
+            listEl.innerHTML = `<p style="color:var(--text-muted);text-align:center;font-size:0.8rem;">${this.t('noData')}</p>`;
+            return;
+        }
+
+        listEl.innerHTML = this.data.loginHistory.slice(0, 8).map(log => `
+            <div class="log-item">
+                <div class="log-time">${new Date(log.time).toLocaleString()}</div>
+                <div class="log-message">${log.userName || log.userId || 'Unknown'} (${log.method || 'login'})</div>
+            </div>
+        `).join('');
+    },
+
+    renderSecurityLogs() {
+        const listEl = document.getElementById('securityLogList');
+        const logs = this.data.logs.slice(0, 8);
+
+        if (logs.length === 0) {
+            listEl.innerHTML = `<p style="color:var(--text-muted);text-align:center;font-size:0.8rem;">${this.t('noData')}</p>`;
+            return;
+        }
+
+        listEl.innerHTML = logs.map(log => `
+            <div class="log-item ${log.level}">
+                <div class="log-time">${new Date(log.time).toLocaleString()}</div>
+                <div class="log-message">${log.message}</div>
+            </div>
+        `).join('');
+    },
+
+    // ===== SETTINGS =====
+    showSettings() {
+        document.getElementById('settingsMasterUrl').value = this.masterUrl;
+        document.getElementById('autoLockMinutes').value = this.settings.autoLockMinutes || 0;
+        document.getElementById('settingsModal').classList.add('show');
+    },
+
+    saveSettings() {
+        const currentPwd = document.getElementById('currentPassword').value;
+        const newPwd = document.getElementById('newPassword').value;
+        const confirmPwd = document.getElementById('confirmNewPassword').value;
+        const masterUrl = document.getElementById('settingsMasterUrl').value.trim();
+        const autoLock = parseInt(document.getElementById('autoLockMinutes').value) || 0;
+
+        // Verify current password if changing password
+        if (newPwd) {
+            const hashedInput = this.hashPassword(currentPwd);
+            const savedHash = this.settings.passwordHash || this.hashPassword('admin123');
+
+            if (hashedInput !== savedHash && currentPwd !== this.settings.password) {
+                this.showNotification(this.t('passwordWrong'), 'error');
+                return;
+            }
+
+            if (newPwd !== confirmPwd) {
+                this.showNotification(this.t('passwordMismatch'), 'error');
+                return;
+            }
+
+            this.settings.password = newPwd;
+            this.settings.passwordHash = this.hashPassword(newPwd);
+            this.showNotification(this.t('passwordChanged'), 'success');
+        }
+
+        if (masterUrl) {
+            this.masterUrl = masterUrl;
+            localStorage.setItem('terminalMasterUrl', masterUrl);
+        }
+
+        this.settings.autoLockMinutes = autoLock;
+        this.saveSettings_toStorage();
+        this.closeModal('settingsModal');
+
+        // Clear password fields
+        document.getElementById('currentPassword').value = '';
+        document.getElementById('newPassword').value = '';
+        document.getElementById('confirmNewPassword').value = '';
+    },
+
+    saveSettings_toStorage() {
+        localStorage.setItem('terminalSettings', JSON.stringify(this.settings));
+    },
+
+    // ===== HELP =====
+    showHelp() {
+        document.getElementById('helpContent').innerHTML = this.t('helpContent');
+        document.getElementById('helpModal').classList.add('show');
+    },
+
+    showHelpInConsole() {
+        this.addConsoleLine('=== HELP ===', 'system');
+        const helpLines = this.t('helpContent').replace(/<[^>]+>/g, '').split('\n').filter(l => l.trim());
+        helpLines.forEach(line => this.addConsoleLine(line.trim(), 'info'));
+    },
+
+    // ===== LANGUAGE =====
+    toggleLanguage() {
+        this.setLanguage(this.currentLang === 'zh-TW' ? 'en' : 'zh-TW');
+    },
+
+    setLanguage(lang) {
+        this.currentLang = lang;
+        document.body.classList.toggle('lang-en', lang === 'en');
+        document.getElementById('langLabel').textContent = lang === 'zh-TW' ? '繁中' : 'EN';
+        this.applyLanguage();
+
+        // Update section toggle buttons
+        document.querySelectorAll('.section-toggle button').forEach((btn, i) => {
+            if (i === 0) btn.textContent = this.t('whitelist');
+            if (i === 1) btn.textContent = this.t('blacklist');
+            if (i === 2) btn.textContent = this.t('unknown');
+        });
+    },
+
+    applyLanguage() {
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.getAttribute('data-i18n');
+            const text = this.t(key);
+            if (text) el.textContent = text;
+        });
+    },
+
+    t(key) {
+        return this.i18n[this.currentLang]?.[key] || this.i18n['en']?.[key] || key;
+    },
+
+    // ===== MODAL =====
+    closeModal(id) {
+        document.getElementById(id).classList.remove('show');
+    },
+
+    // ===== NOTIFICATION =====
+    showNotification(message, type = 'info') {
+        const notif = document.createElement('div');
+        notif.className = `terminal-notification ${type}`;
+        notif.textContent = message;
+        document.body.appendChild(notif);
+        setTimeout(() => notif.remove(), 4000);
+    },
+
+    // ===== SECURITY LOG =====
+    logSecurity(action, message) {
+        this.data.logs.unshift({
+            level: action === 'lock' || action === 'ip_block' ? 'error' : 'info',
+            action,
+            message,
+            time: new Date().toISOString()
+        });
+
+        if (this.data.logs.length > 100) {
+            this.data.logs = this.data.logs.slice(0, 100);
+        }
+
+        this.saveData();
+        this.renderSecurityLogs();
+    },
+
+    // ===== UTILITIES =====
+    updateTime() {
+        const el = document.getElementById('terminalTime');
+        if (el) {
+            el.textContent = new Date().toLocaleString(this.currentLang === 'en' ? 'en-US' : 'zh-TW');
+        }
+    },
+
+    checkAutoLock() {
+        if (!this.settings.autoLockMinutes || this.settings.autoLockMinutes <= 0) return;
+
+        const inactiveTime = Date.now() - this.settings.lastActivity;
+        const lockTime = this.settings.autoLockMinutes * 60 * 1000;
+
+        if (inactiveTime > lockTime && this.isLoggedIn) {
+            this.logout();
+            this.showNotification(this.currentLang === 'zh-TW' ? '已自動鎖定（長時間無操作）' : 'Auto-locked due to inactivity', 'warning');
+        }
+    },
+
+    logout() {
+        this.isLoggedIn = false;
+
+        if (this.pollingInterval) {
+            clearInterval(this.pollingInterval);
+            this.pollingInterval = null;
+        }
+
+        if (this.scheduleCheckInterval) {
+            clearInterval(this.scheduleCheckInterval);
+            this.scheduleCheckInterval = null;
+        }
+
+        localStorage.removeItem('terminalConnectionActive');
+
+        document.getElementById('terminalApp').style.display = 'none';
+        document.getElementById('loginScreen').style.display = 'flex';
+        document.getElementById('terminalPassword').value = '';
+        document.getElementById('loginError').classList.remove('show');
+    },
+
+    addToList(type, ip) {
+        if (this.data[type].includes(ip)) {
+            this.addConsoleLine(`${type}: IP ${ip} already exists`, 'warning');
+            return;
+        }
+        this.data[type].push(ip);
+        this.saveData();
+        this.addConsoleLine(`${type}: Added ${ip}`, 'success');
+    }
+};
+
+// ===== INIT =====
+document.addEventListener('DOMContentLoaded', () => {
+    TerminalApp.init();
+});
+</script>
+
+</body>
+</html>
